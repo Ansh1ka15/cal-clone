@@ -214,8 +214,16 @@ export default function Bookings() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
         </div>
       ) : displayed.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center text-gray-500">
-          No {tab} bookings found.
+        <div className="rounded-[2rem] border border-dashed border-gray-200 bg-white p-12 text-center">
+          <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-brand/10 text-brand">
+            <Calendar size={28} />
+          </div>
+          <p className="text-xl font-semibold text-slate-900">
+            No {tab} bookings yet
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            Once someone books a meeting, it will appear here.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -70,7 +70,7 @@ export default function BookingConfirm() {
             Dashboard
           </Link>
           <Link
-            to={`/book/${eventType.slug}`}
+            to={`/booking/${eventType.slug}`}
             className="rounded-3xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white hover:bg-brand-dark"
           >
             Book again

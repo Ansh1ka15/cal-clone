@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { getAvailability, updateAvailability } from "../api/index.js";
+import { getAvailability, saveAvailability } from "../api/index.js";
 import { Save } from "lucide-react";
 
 const DAYS = [
@@ -53,7 +53,7 @@ export default function Availability() {
   const save = async () => {
     setSaving(true);
     try {
-      await updateAvailability({ schedule, timezone });
+      await saveAvailability({ schedule, timezone });
       toast.success("Availability updated");
     } catch {
       toast.error("Failed to save availability");

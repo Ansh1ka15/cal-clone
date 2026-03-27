@@ -5,6 +5,7 @@ import {
   Link2,
   Edit2,
   Trash2,
+  AlertTriangle,
   Copy,
   ToggleLeft,
   ToggleRight,
@@ -182,6 +183,7 @@ export default function Dashboard() {
   const [eventTypes, setEventTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchEventTypes = async () => {
     try {
@@ -215,11 +217,11 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this event type?")) return;
     try {
       await deleteEventType(id);
       toast.success("Deleted");
       fetchEventTypes();
+      setDeleteTarget(null);
     } catch {
       toast.error("Delete failed");
     }
@@ -235,113 +237,151 @@ export default function Dashboard() {
   };
 
   const copyLink = (slug) => {
-    navigator.clipboard.writeText(`${window.location.origin}/book/${slug}`);
+    navigator.clipboard.writeText(`${window.location.origin}/booking/${slug}`);
     toast.success("Link copied");
   };
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-900">Event types</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Create booking pages that mimic Cal.com behavior.
-          </p>
-        </div>
-        <button
-          onClick={() => setModal("create")}
-          className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
-        >
-          <Plus size={16} /> New event type
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
-        </div>
-      ) : eventTypes.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center text-gray-500">
-          No event types yet. Start by creating one.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {eventTypes.map((eventType) => (
-            <div
-              key={eventType.id}
-              className={`rounded-3xl border bg-white p-5 shadow-sm transition ${eventType.isActive ? "" : "opacity-70"}`}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div
-                    className="mt-1 h-3 w-3 rounded-full"
-                    style={{ backgroundColor: eventType.color }}
-                  />
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {eventType.title}
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {eventType.description || "No description provided."}
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                      <span>{eventType.duration} min</span>
-                      <span>·</span>
-                      <span>{eventType.location}</span>
-                      <span>·</span>
-                      <Link
-                        to={`/book/${eventType.slug}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-brand hover:underline"
-                      >
-                        <Link2 size={14} />/{eventType.slug}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => copyLink(eventType.slug)}
-                    className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-                  >
-                    <Copy size={14} /> Copy link
-                  </button>
-                  <button
-                    onClick={() => setModal(eventType)}
-                    className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-                  >
-                    <Edit2 size={14} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggle(eventType)}
-                    className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-                  >
-                    {eventType.isActive ? (
-                      <ToggleRight size={14} />
-                    ) : (
-                      <ToggleLeft size={14} />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(eventType.id)}
-                    className="rounded-2xl border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
+    <>
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-red-100 text-red-600">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Delete event type
+                </h2>
+                <p className="mt-2 text-sm text-gray-500">
+                  Are you sure you want to delete "{deleteTarget.title}"? This
+                  cannot be undone.
+                </p>
               </div>
             </div>
-          ))}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteTarget.id)}
+                className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
+      <div className="mx-auto max-w-6xl p-6">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-900">
+              Event types
+            </h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Create booking pages that mimic Cal.com behavior.
+            </p>
+          </div>
+          <button
+            onClick={() => setModal("create")}
+            className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+          >
+            <Plus size={16} /> New event type
+          </button>
+        </div>
 
-      {modal && (
-        <EventTypeModal
-          event={modal === "create" ? null : modal}
-          onClose={() => setModal(null)}
-          onSave={handleSave}
-        />
-      )}
-    </div>
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+          </div>
+        ) : eventTypes.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center text-gray-500">
+            No event types yet. Start by creating one.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {eventTypes.map((eventType) => (
+              <div
+                key={eventType.id}
+                className={`rounded-3xl border bg-white p-5 shadow-sm transition ${eventType.isActive ? "" : "opacity-70"}`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="mt-1 h-3 w-3 rounded-full"
+                      style={{ backgroundColor: eventType.color }}
+                    />
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {eventType.title}
+                      </h2>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {eventType.description || "No description provided."}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                        <span>{eventType.duration} min</span>
+                        <span>·</span>
+                        <span>{eventType.location}</span>
+                        <span>·</span>
+                        <Link
+                          to={`/booking/${eventType.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-brand hover:underline"
+                        >
+                          <Link2 size={14} />/{eventType.slug}
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => copyLink(eventType.slug)}
+                      className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                    >
+                      <Copy size={14} /> Copy link
+                    </button>
+                    <button
+                      onClick={() => setModal(eventType)}
+                      className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                    >
+                      <Edit2 size={14} /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggle(eventType)}
+                      className="rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                    >
+                      {eventType.isActive ? (
+                        <ToggleRight size={14} />
+                      ) : (
+                        <ToggleLeft size={14} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(eventType)}
+                      className="rounded-2xl border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {modal && (
+          <EventTypeModal
+            event={modal === "create" ? null : modal}
+            onClose={() => setModal(null)}
+            onSave={handleSave}
+          />
+        )}
+      </div>
+    </>
   );
 }

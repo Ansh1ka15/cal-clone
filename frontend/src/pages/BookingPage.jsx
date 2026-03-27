@@ -53,9 +53,15 @@ export default function BookingPage() {
         const endMinutes =
           Number(dayAvail.endTime.split(":")[0]) * 60 +
           Number(dayAvail.endTime.split(":")[1]);
+        const isToday = dayjs(selectedDate).isSame(dayjs(), "day");
+        const now = dayjs();
+
         while (hour * 60 + minute + eventType.duration <= endMinutes) {
           const slot = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-          if (!booked.has(slot)) generated.push(slot);
+          const slotTime = dayjs(`${selectedDate}T${slot}`);
+          if (!booked.has(slot) && (!isToday || slotTime.isAfter(now))) {
+            generated.push(slot);
+          }
           minute += eventType.duration;
           hour += Math.floor(minute / 60);
           minute %= 60;
@@ -248,7 +254,7 @@ export default function BookingPage() {
                   onClick={() => setStep("form")}
                   className="mt-6 w-full rounded-3xl bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-brand-dark"
                 >
-                  Continue to details
+                  Book now
                 </button>
               ) : null}
             </>

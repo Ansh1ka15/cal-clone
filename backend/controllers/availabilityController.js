@@ -22,6 +22,26 @@ exports.get = async (req, res, next) => {
   }
 };
 
+exports.create = async (req, res, next) => {
+  try {
+    const { schedule, timezone } = req.body;
+    await Promise.all(schedule.map((item) =>
+      Availability.upsert({
+        day: item.day,
+        isAvailable: item.isAvailable,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        timezone,
+      })
+    ));
+    const updated = await Availability.findAll({ order: [['day', 'ASC']] });
+    updated.sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day));
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.update = async (req, res, next) => {
   try {
     const { schedule, timezone } = req.body;

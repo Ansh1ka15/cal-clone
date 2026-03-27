@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5001/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -12,6 +12,7 @@ export const updateEventType = (id, data) => api.put(`/event-types/${id}`, data)
 export const deleteEventType = (id) => api.delete(`/event-types/${id}`);
 
 export const getAvailability = () => api.get('/availability');
+export const saveAvailability = (data) => api.post('/availability', data);
 export const updateAvailability = (data) => api.put('/availability', data);
 
 export const getBookings = () => api.get('/bookings');

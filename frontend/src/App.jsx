@@ -15,6 +15,7 @@ export default function App() {
         toastOptions={{ style: { fontSize: "14px" } }}
       />
       <Routes>
+        <Route path="/booking/:slug" element={<BookingPage />} />
         <Route path="/book/:slug" element={<BookingPage />} />
         <Route path="/booking-confirmed" element={<BookingConfirm />} />
         <Route
