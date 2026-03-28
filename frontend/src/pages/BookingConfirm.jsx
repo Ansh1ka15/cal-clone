@@ -4,7 +4,15 @@ import dayjs from "dayjs";
 
 export default function BookingConfirm() {
   const { state } = useLocation();
-  if (!state || !state.booking || !state.eventType) {
+  const savedState =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("bookingConfirm")
+      : null;
+  const parsedState = savedState ? JSON.parse(savedState) : null;
+  const finalState =
+    state && state.booking && state.eventType ? state : parsedState;
+
+  if (!finalState || !finalState.booking || !finalState.eventType) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 text-center">
         <div className="rounded-3xl bg-white p-10 shadow-lg">
@@ -19,7 +27,7 @@ export default function BookingConfirm() {
     );
   }
 
-  const { booking, eventType } = state;
+  const { booking, eventType } = finalState;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

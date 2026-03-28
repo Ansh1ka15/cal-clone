@@ -99,8 +99,10 @@ export default function BookingPage() {
         startTime: selectedSlot,
         endTime,
       });
+      const confirmData = { booking: response.data, eventType };
+      sessionStorage.setItem("bookingConfirm", JSON.stringify(confirmData));
       navigate("/booking-confirmed", {
-        state: { booking: response.data, eventType },
+        state: confirmData,
       });
     } catch (error) {
       toast.error(error.response?.data?.error || "Booking failed");
