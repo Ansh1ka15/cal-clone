@@ -154,22 +154,6 @@ npm run dev
 
 ---
 
-## 📌 Note
-
-This project uses a **dummy logged-in user**.
-No authentication (JWT/OAuth) is implemented as it's not required for core functionality.
-
----
-
-## 🚀 Future Improvements
-
-* 🔐 Add authentication (JWT / OAuth)
-* 📅 Google Calendar integration
-* 🌍 Timezone handling improvements
-* 📩 Real email notifications
-
----
-
 ## 👩‍💻 Author
 
 **Anshika Singh**
