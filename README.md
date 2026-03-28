@@ -5,6 +5,12 @@ Users can create event types, set availability, and allow others to book meeting
 
 ---
 
+## 🚀 Live Demo
+
+👉 https://cal-clone-rho.vercel.app
+
+---
+
 ## 🔗 Live Repository
 
 👉 https://github.com/Ansh1ka15/cal-clone
