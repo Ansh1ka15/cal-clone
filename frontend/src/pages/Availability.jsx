@@ -12,6 +12,14 @@ const DAYS = [
   "Saturday",
   "Sunday",
 ];
+
+const DEFAULT_SCHEDULE = DAYS.map((day, index) => ({
+  day,
+  isAvailable: index < 5,
+  startTime: "09:00",
+  endTime: "17:00",
+  timezone: "Asia/Kolkata",
+}));
 const TIMEZONES = [
   "Asia/Kolkata",
   "America/New_York",
@@ -35,20 +43,25 @@ export default function Availability() {
   useEffect(() => {
     getAvailability()
       .then(({ data }) => {
-        setSchedule(data);
-        if (data.length) setTimezone(data[0].timezone || "Asia/Kolkata");
+        if (Array.isArray(data) && data.length > 0) {
+          setSchedule(data);
+          setTimezone(data[0].timezone || "Asia/Kolkata");
+        } else {
+          setSchedule(DEFAULT_SCHEDULE);
+          setTimezone("Asia/Kolkata");
+        }
       })
       .catch(() => toast.error("Failed to load availability"))
       .finally(() => setLoading(false));
   }, []);
 
-  const updateDay = (day, field, value) => {
-    setSchedule((prev) =>
-      prev.map((item) =>
-        item.day === day ? { ...item, [field]: value } : item,
-      ),
-    );
-  };
+const updateDay = (index, field, value) => {
+  setSchedule((prev) =>
+    prev.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    )
+  );
+};
 
   const save = async () => {
     setSaving(true);
@@ -107,7 +120,7 @@ export default function Availability() {
         </div>
 
         <div className="space-y-3">
-          {schedule.map((item) => (
+          {schedule.map((item, index) => (
             <div
               key={item.day}
               className="grid gap-4 rounded-3xl border border-gray-100 bg-gray-50 p-4 sm:grid-cols-[120px_auto_auto] sm:items-center"
@@ -118,7 +131,7 @@ export default function Availability() {
                     type="checkbox"
                     checked={item.isAvailable}
                     onChange={(event) =>
-                      updateDay(item.day, "isAvailable", event.target.checked)
+                      updateDay(index, "isAvailable", event.target.checked)
                     }
                     className="peer sr-only"
                   />
@@ -138,7 +151,7 @@ export default function Availability() {
                       <select
                         value={item.startTime}
                         onChange={(event) =>
-                          updateDay(item.day, "startTime", event.target.value)
+                          updateDay(index, "startTime", event.target.value)
                         }
                         className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-brand/20"
                       >
@@ -154,7 +167,7 @@ export default function Availability() {
                       <select
                         value={item.endTime}
                         onChange={(event) =>
-                          updateDay(item.day, "endTime", event.target.value)
+                          updateDay(index, "endTime", event.target.value)
                         }
                         className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-brand/20"
                       >
