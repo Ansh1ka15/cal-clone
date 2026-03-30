@@ -10,7 +10,6 @@ const Availability = sequelize.define('Availability', {
   day: {
     type: DataTypes.ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'),
     allowNull: false,
-    unique: true,
   },
   isAvailable: {
     type: DataTypes.BOOLEAN,

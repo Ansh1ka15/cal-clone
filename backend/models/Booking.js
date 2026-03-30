@@ -36,6 +36,10 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.TEXT,
     defaultValue: '',
   },
+  customAnswers: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+  },
   cancelReason: {
     type: DataTypes.STRING(300),
     defaultValue: '',

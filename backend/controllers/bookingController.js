@@ -1,9 +1,34 @@
+const { Op } = require('sequelize');
 const { Booking, EventType } = require('../models');
 const { sendBookingConfirmation, sendCancellationEmail, sendRescheduleEmail } = require('../services/emailService');
 
 exports.getAll = async (req, res, next) => {
   try {
+    const { tab } = req.query;
+    let whereClause = {};
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (tab === 'past') {
+      whereClause = {
+        date: { [Op.lt]: today },
+        status: { [Op.ne]: 'cancelled' },
+      };
+    } else if (tab === 'canceled') {
+      whereClause = {
+        status: 'cancelled',
+      };
+    } else if (tab === 'unconfirmed' || tab === 'recurring') {
+      return res.json([]);
+    } else {
+      // default to upcoming
+      whereClause = {
+        date: { [Op.gte]: today },
+        status: { [Op.ne]: 'cancelled' },
+      };
+    }
+
     const bookings = await Booking.findAll({
+      where: whereClause,
       include: [{ model: EventType, as: 'eventType', attributes: ['title', 'duration', 'color', 'slug'] }],
       order: [['date', 'ASC'], ['startTime', 'ASC']],
     });

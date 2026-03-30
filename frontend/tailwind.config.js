@@ -1,16 +1,17 @@
 export default {
+  darkMode: ['media'],
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#6366f1',
-          dark: '#4f46e5',
-          light: '#eef2ff',
+          DEFAULT: '#111827',
+          dark: '#0f172a',
+          light: '#f8fafc',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
     },
   },

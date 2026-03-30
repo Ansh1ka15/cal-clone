@@ -8,7 +8,13 @@ import {
   getBookedSlots,
   createBooking,
 } from "../api/index.js";
-import { Clock, Globe, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Clock,
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+} from "lucide-react";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -17,11 +23,13 @@ export default function BookingPage() {
   const navigate = useNavigate();
   const [eventType, setEventType] = useState(null);
   const [availability, setAvailability] = useState([]);
+  const [overrides, setOverrides] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [form, setForm] = useState({ name: "", email: "", notes: "" });
+  const [customAnswers, setCustomAnswers] = useState({});
   const [step, setStep] = useState("calendar");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -30,7 +38,13 @@ export default function BookingPage() {
     Promise.all([getEventTypeBySlug(slug), getAvailability()])
       .then(([eventRes, availRes]) => {
         setEventType(eventRes.data);
-        setAvailability(availRes.data);
+        if (Array.isArray(availRes.data)) {
+          setAvailability(availRes.data);
+          setOverrides([]);
+        } else {
+          setAvailability(availRes.data.availabilities || []);
+          setOverrides(availRes.data.overrides || []);
+        }
       })
       .catch(() => toast.error("Unable to load booking page"))
       .finally(() => setLoading(false));
@@ -38,8 +52,16 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (!selectedDate || !eventType) return;
-    const dayName = dayjs(selectedDate).format("dddd");
-    const dayAvail = availability.find((item) => item.day === dayName);
+    
+    const override = overrides.find((o) => o.date === selectedDate);
+    let dayAvail;
+    if (override) {
+      dayAvail = { isAvailable: override.isAvailable, slots: override.slots || [] };
+    } else {
+      const dayName = dayjs(selectedDate).format("dddd");
+      dayAvail = availability.find((item) => item.day === dayName);
+    }
+
     if (!dayAvail?.isAvailable) {
       setSlots([]);
       return;
@@ -49,22 +71,27 @@ export default function BookingPage() {
       .then(({ data }) => {
         const booked = new Set(data.map((item) => item.startTime));
         const generated = [];
-        let [hour, minute] = dayAvail.startTime.split(":").map(Number);
-        const endMinutes =
-          Number(dayAvail.endTime.split(":")[0]) * 60 +
-          Number(dayAvail.endTime.split(":")[1]);
         const isToday = dayjs(selectedDate).isSame(dayjs(), "day");
         const now = dayjs();
+        const buffer = eventType.bufferTime || 0;
 
-        while (hour * 60 + minute + eventType.duration <= endMinutes) {
-          const slot = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-          const slotTime = dayjs(`${selectedDate}T${slot}`);
-          if (!booked.has(slot) && (!isToday || slotTime.isAfter(now))) {
-            generated.push(slot);
+        const slotsToProcess = dayAvail.slots || [];
+        for (const timeBlock of slotsToProcess) {
+          let [hour, minute] = timeBlock.startTime.split(":").map(Number);
+          const endMinutes =
+            Number(timeBlock.endTime.split(":")[0]) * 60 +
+            Number(timeBlock.endTime.split(":")[1]);
+
+          while (hour * 60 + minute + eventType.duration <= endMinutes) {
+            const slot = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+            const slotTime = dayjs(`${selectedDate}T${slot}`);
+            if (!booked.has(slot) && (!isToday || slotTime.isAfter(now))) {
+              generated.push(slot);
+            }
+            minute += eventType.duration + buffer;
+            hour += Math.floor(minute / 60);
+            minute %= 60;
           }
-          minute += eventType.duration;
-          hour += Math.floor(minute / 60);
-          minute %= 60;
         }
         setSlots(generated);
       })
@@ -72,7 +99,12 @@ export default function BookingPage() {
   }, [availability, eventType, selectedDate]);
 
   const isAvailableDay = (date) => {
-    if (!availability.length || date.isBefore(dayjs(), "day")) return false;
+    if (date.isBefore(dayjs(), "day")) return false;
+    const dateKey = date.format("YYYY-MM-DD");
+    const override = overrides.find((o) => o.date === dateKey);
+    if (override) return override.isAvailable;
+    
+    if (!availability.length) return false;
     const dayName = date.format("dddd");
     return availability.some(
       (item) => item.day === dayName && item.isAvailable,
@@ -95,6 +127,7 @@ export default function BookingPage() {
         bookerName: form.name,
         bookerEmail: form.email,
         notes: form.notes,
+        customAnswers,
         date: selectedDate,
         startTime: selectedSlot,
         endTime,
@@ -113,7 +146,7 @@ export default function BookingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--text)]">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
       </div>
     );
@@ -121,7 +154,7 @@ export default function BookingPage() {
 
   if (!eventType) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-4 text-center text-[var(--muted)]">
         Event not found.
       </div>
     );
@@ -137,66 +170,78 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 py-8">
-      <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="rounded-[2rem] bg-white p-8 shadow-lg">
-          <div className="mb-6 flex items-center gap-4">
+    <div className="min-h-screen bg-[var(--bg)] px-4 py-8 text-[var(--text)] sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[360px_1fr]">
+        <div className="rounded-[2rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl">
+          <div className="flex items-start gap-4">
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-3xl"
+              className="flex h-14 w-14 items-center justify-center rounded-3xl"
               style={{ backgroundColor: eventType.color }}
             >
-              <span className="text-xl font-semibold text-white">U</span>
+              <CheckCircle size={24} className="text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Hosted by Default User</p>
-              <h1 className="mt-2 text-2xl font-semibold text-gray-900">
+              <p className="text-sm uppercase tracking-[0.28em] text-[var(--muted)]">
+                Hosted by
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold text-[var(--text)]">
                 {eventType.title}
               </h1>
+              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                {eventType.description}
+              </p>
             </div>
           </div>
-          <p className="text-sm text-gray-500">{eventType.description}</p>
-          <div className="mt-6 space-y-3 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
+          <div className="mt-8 rounded-[1.75rem] border border-[var(--panel-border)] bg-[var(--hover)] p-5 text-sm text-[var(--text)]">
+            <div className="flex items-center gap-3">
               <Clock size={16} />
               <span>{eventType.duration} minutes</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-3">
               <Globe size={16} />
-              <span>{availability[0]?.timezone || "Asia/Kolkata"}</span>
+              <span>
+                {availability[0]?.timezone?.replace("_", " ") || "Asia/Kolkata"}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-white p-8 shadow-lg">
+        <div className="rounded-[2rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl">
           {step === "calendar" ? (
             <>
-              <div className="mb-6 flex items-center justify-between">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">
                     Pick a date
                   </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[var(--text)]">
+                    Select a day
+                  </h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--hover)] px-3 py-2 text-sm text-[var(--text)]">
                   <button
+                    type="button"
                     onClick={() =>
                       setCurrentMonth((prev) => prev.subtract(1, "month"))
                     }
-                    className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                    className="rounded-full p-2 hover:bg-[var(--panel-border)] transition"
                   >
                     <ChevronLeft size={18} />
                   </button>
+                  <span>{currentMonth.format("MMMM YYYY")}</span>
                   <button
+                    type="button"
                     onClick={() =>
                       setCurrentMonth((prev) => prev.add(1, "month"))
                     }
-                    className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                    className="rounded-full p-2 hover:bg-[var(--panel-border)] transition"
                   >
                     <ChevronRight size={18} />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase text-gray-500">
+              <div className="mt-6 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase text-[var(--muted)]">
                 {WEEKDAYS.map((day) => (
                   <div key={day}>{day}</div>
                 ))}
@@ -216,7 +261,7 @@ export default function BookingPage() {
                         setSelectedDate(dateKey);
                         setSelectedSlot("");
                       }}
-                      className={`rounded-3xl py-3 text-sm font-semibold transition ${selected ? "bg-brand text-white" : available ? "bg-gray-100 text-gray-900 hover:bg-brand-light" : "text-gray-300"}`}
+                      className={`rounded-3xl py-3 text-sm font-semibold transition border border-transparent ${selected ? "bg-brand text-white shadow-md shadow-brand/20" : available ? "bg-[var(--hover)] text-[var(--text)] hover:border-[var(--text)] hover:bg-[var(--panel-bg)] cursor-pointer" : "bg-transparent text-[var(--muted)] opacity-50 cursor-not-allowed"}`}
                     >
                       {day.date()}
                     </button>
@@ -226,7 +271,7 @@ export default function BookingPage() {
 
               {selectedDate ? (
                 <div className="mt-6">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-[var(--text)]">
                     Available times
                   </p>
                   {slots.length ? (
@@ -236,14 +281,14 @@ export default function BookingPage() {
                           key={slot}
                           type="button"
                           onClick={() => setSelectedSlot(slot)}
-                          className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${selectedSlot === slot ? "border-brand bg-brand text-white" : "border-gray-200 text-gray-700 hover:border-brand hover:text-brand"}`}
+                          className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition outline-none ${selectedSlot === slot ? "border-brand bg-brand text-white shadow-lg shadow-brand/20" : "border-[var(--panel-border)] text-[var(--text)] bg-[var(--panel-bg)] hover:border-[var(--text)]"}`}
                         >
                           {slot}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-4 text-sm text-gray-500">
+                    <p className="mt-4 text-sm text-[var(--muted)]">
                       No available times on this day.
                     </p>
                   )}
@@ -264,22 +309,22 @@ export default function BookingPage() {
             <>
               <button
                 onClick={() => setStep("calendar")}
-                className="mb-4 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                className="mb-4 inline-flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--text)] transition"
               >
                 <ChevronLeft size={16} /> Back to calendar
               </button>
-              <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5 mb-6">
-                <p className="text-sm text-gray-500">Booking</p>
-                <p className="mt-2 text-lg font-semibold text-gray-900">
+              <div className="rounded-[1.75rem] border border-[var(--panel-border)] bg-[var(--hover)] p-5 mb-6">
+                <p className="text-sm text-[var(--muted)]">Booking</p>
+                <p className="mt-2 text-lg font-semibold text-[var(--text)]">
                   {dayjs(selectedDate).format("dddd, MMM D")}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--muted)]">
                   {selectedSlot} • {eventType.duration} minutes
                 </p>
               </div>
               <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-[var(--text)]">
                     Name
                   </label>
                   <input
@@ -288,12 +333,12 @@ export default function BookingPage() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, name: event.target.value }))
                     }
-                    className="mt-2 w-full rounded-3xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-brand/20"
+                    className="mt-2 w-full rounded-3xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-3 text-[var(--text)] outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                     placeholder="Your name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-[var(--text)]">
                     Email
                   </label>
                   <input
@@ -306,12 +351,12 @@ export default function BookingPage() {
                         email: event.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-3xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-brand/20"
+                    className="mt-2 w-full rounded-3xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-3 text-[var(--text)] outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                     placeholder="you@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-[var(--text)]">
                     Notes
                   </label>
                   <textarea
@@ -323,14 +368,30 @@ export default function BookingPage() {
                       }))
                     }
                     rows="4"
-                    className="mt-2 w-full rounded-3xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-brand/20"
+                    className="mt-2 w-full rounded-3xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-3 text-[var(--text)] outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                     placeholder="Share anything helpful for the meeting"
                   />
                 </div>
+                
+                {(eventType.customQuestions || []).map((q, idx) => (
+                  <div key={idx}>
+                    <label className="block text-sm font-medium text-[var(--text)]">
+                      {q}
+                    </label>
+                    <input
+                      required
+                      value={customAnswers[q] || ""}
+                      onChange={(e) => setCustomAnswers(prev => ({...prev, [q]: e.target.value}))}
+                      className="mt-2 w-full rounded-3xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-3 text-[var(--text)] outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
+                      placeholder={`Your answer for ${q}`}
+                    />
+                  </div>
+                ))}
+                
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-3xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-60"
+                  className="w-full rounded-3xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/20 hover:bg-brand-dark disabled:opacity-60"
                 >
                   {submitting ? "Booking..." : "Confirm booking"}
                 </button>

@@ -19,7 +19,16 @@ const EventType = sequelize.define('EventType', {
   duration: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    defaultValue: 30,
     validate: { min: 5, max: 480 },
+  },
+  bufferTime: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  customQuestions: {
+    type: DataTypes.JSON,
+    defaultValue: [],
   },
   slug: {
     type: DataTypes.STRING(120),

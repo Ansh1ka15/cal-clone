@@ -8,7 +8,7 @@ import {
   getAvailability,
   getBookedSlots,
 } from "../api/index.js";
-import { Calendar, Clock, X, RefreshCw } from "lucide-react";
+import { Calendar, Clock, X, RefreshCw, Filter, Search } from "lucide-react";
 
 const STATUS_STYLES = {
   confirmed: "bg-green-100 text-green-700",
@@ -21,40 +21,65 @@ function RescheduleModal({ booking, onClose, onConfirm }) {
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [availability, setAvailability] = useState([]);
+  const [overrides, setOverrides] = useState([]);
 
   useEffect(() => {
     getAvailability()
-      .then(({ data }) => setAvailability(data))
+      .then(({ data }) => {
+        if (Array.isArray(data)) {
+          setAvailability(data);
+        } else {
+          setAvailability(data.availabilities || []);
+          setOverrides(data.overrides || []);
+        }
+      })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!date) return setSlots([]);
-    const dayName = dayjs(date).format("dddd");
-    const dayAvail = availability.find((item) => item.day === dayName);
+
+    const override = overrides.find((o) => o.date === date);
+    let dayAvail;
+    if (override) {
+      dayAvail = { isAvailable: override.isAvailable, slots: override.slots || [] };
+    } else {
+      const dayName = dayjs(date).format("dddd");
+      dayAvail = availability.find((item) => item.day === dayName);
+    }
+
     if (!dayAvail?.isAvailable) return setSlots([]);
 
     getBookedSlots(booking.eventTypeId, date)
       .then(({ data }) => {
         const booked = new Set(data.map((item) => item.startTime));
         const generated = [];
-        let [hour, minute] = dayAvail.startTime.split(":").map(Number);
-        const endMins =
-          Number(dayAvail.endTime.split(":")[0]) * 60 +
-          Number(dayAvail.endTime.split(":")[1]);
-        while (hour * 60 + minute + booking.eventType.duration <= endMins) {
-          const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-          if (!booked.has(time)) {
-            generated.push(time);
+        const isToday = dayjs(date).isSame(dayjs(), "day");
+        const now = dayjs();
+        const buffer = booking.eventType.bufferTime || 0;
+
+        const slotsToProcess = dayAvail.slots || [];
+        for (const timeBlock of slotsToProcess) {
+          let [hour, minute] = timeBlock.startTime.split(":").map(Number);
+          const endMins =
+            Number(timeBlock.endTime.split(":")[0]) * 60 +
+            Number(timeBlock.endTime.split(":")[1]);
+
+          while (hour * 60 + minute + booking.eventType.duration <= endMins) {
+            const slot = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+            const slotTime = dayjs(`${date}T${slot}`);
+            if (!booked.has(slot) && (!isToday || slotTime.isAfter(now))) {
+              generated.push(slot);
+            }
+            minute += booking.eventType.duration + buffer;
+            hour += Math.floor(minute / 60);
+            minute %= 60;
           }
-          minute += booking.eventType.duration;
-          hour += Math.floor(minute / 60);
-          minute %= 60;
         }
         setSlots(generated);
       })
       .catch(() => setSlots([]));
-  }, [date, booking, availability]);
+  }, [date, booking, availability, overrides]);
 
   const handleSubmit = () => {
     if (!date || !selectedSlot) {
@@ -140,10 +165,13 @@ export default function Bookings() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("upcoming");
   const [rescheduleItem, setRescheduleItem] = useState(null);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchBookings = async () => {
+    setLoading(true);
     try {
-      const { data } = await getBookings();
+      const { data } = await getBookings(tab);
       setBookings(data);
     } catch {
       toast.error("Unable to load bookings");
@@ -154,16 +182,18 @@ export default function Bookings() {
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [tab]);
 
-  const today = dayjs().format("YYYY-MM-DD");
-  const upcoming = bookings.filter(
-    (item) => item.status !== "cancelled" && item.date >= today,
-  );
-  const past = bookings.filter(
-    (item) => item.status === "cancelled" || item.date < today,
-  );
-  const displayed = tab === "upcoming" ? upcoming : past;
+  const displayed = bookings.filter((b) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (b.bookerName || "").toLowerCase().includes(q) ||
+      (b.bookerEmail || "").toLowerCase().includes(q) ||
+      (b.eventType?.title || "").toLowerCase().includes(q) ||
+      String(b.id).includes(q)
+    );
+  });
 
   const handleCancel = async (id) => {
     if (!confirm("Cancel this booking?")) return;
@@ -189,23 +219,63 @@ export default function Bookings() {
 
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900">Bookings</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Review upcoming and past meetings.
+          <h1 className="text-3xl font-semibold text-[var(--text)]">Bookings</h1>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            See upcoming and past events booked through your event type links.
           </p>
         </div>
-        <div className="inline-flex overflow-hidden rounded-3xl border border-gray-200 bg-white">
-          {["upcoming", "past"].map((value) => (
-            <button
-              key={value}
-              onClick={() => setTab(value)}
-              className={`px-5 py-3 text-sm font-semibold transition ${tab === value ? "bg-brand text-white" : "text-gray-600 hover:bg-gray-50"}`}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+            {["upcoming", "unconfirmed", "recurring", "past", "canceled"].map((value) => (
+              <button
+                key={value}
+                onClick={() => setTab(value)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-full transition ${tab === value ? "bg-[var(--hover)] text-[var(--text)] border border-[var(--panel-border)]" : "text-[var(--muted)] hover:text-[var(--text)] border border-transparent"}`}
+              >
+                {value.charAt(0).toUpperCase() + value.slice(1)}
+              </button>
+            ))}
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border text-[var(--muted)] transition ${filterDropdownOpen ? "border-[var(--text)] bg-[var(--hover)] text-[var(--text)]" : "border-[var(--panel-border)] bg-transparent hover:text-[var(--text)] hover:bg-[var(--hover)]"}`}
             >
-              {value.charAt(0).toUpperCase() + value.slice(1)}
+              <Filter size={14} /> Filter
             </button>
-          ))}
+            
+            {filterDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setFilterDropdownOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 w-[220px] rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-2xl z-50 overflow-hidden text-sm flex flex-col">
+                  <div className="p-2 border-b border-[var(--panel-border)] relative">
+                    <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                    <input 
+                      autoFocus
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search"
+                      className="w-full pl-8 pr-2 py-1.5 bg-transparent outline-none focus:ring-2 focus:ring-[var(--primary)] rounded-md transition text-[var(--text)]"
+                    />
+                  </div>
+                  <div className="flex flex-col py-1 text-[var(--text)]">
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer">Event Type</button>
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer">Team</button>
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer">Member</button>
+                    <button className="flex items-center px-4 py-2 bg-[var(--hover)]/80 transition text-left font-medium cursor-pointer">Attendees Name</button>
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer">Attendee Email</button>
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer text-[var(--muted)]">Date Range</button>
+                    <button className="flex items-center px-4 py-2 hover:bg-[var(--hover)] transition text-left cursor-pointer">Booking UID</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -251,6 +321,13 @@ export default function Bookings() {
                   <p className="mt-3 text-sm text-gray-600">
                     {booking.bookerName} · {booking.bookerEmail}
                   </p>
+                  {booking.customAnswers && Object.keys(booking.customAnswers).length > 0 && (
+                    <div className="mt-2 text-sm text-gray-500">
+                      {Object.entries(booking.customAnswers).map(([k, v]) => (
+                        <div key={k}><strong className="font-semibold text-gray-700">{k}:</strong> {v}</div>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-500">
                     <span className="inline-flex items-center gap-2">
                       <Calendar size={14} />
