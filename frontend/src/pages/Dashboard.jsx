@@ -68,9 +68,9 @@ function EventTypeModal({ event, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[1.5rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-2xl shadow-black/20 flex flex-col">
-        <div className="p-6 pb-2">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--overlay)] p-4 backdrop-blur-sm shadow-xl">
+      <div className="w-full max-w-[480px] rounded-[1.5rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-2xl flex flex-col">
+        <div className="p-5 pb-0">
           <h2 className="text-xl font-bold text-[var(--text)]">
             {event ? "Edit event type" : "Add a new event type"}
           </h2>
@@ -81,7 +81,7 @@ function EventTypeModal({ event, onClose, onSave }) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-6">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <label className="block text-sm font-semibold text-[var(--text)]">
             Title
             <input
@@ -90,17 +90,17 @@ function EventTypeModal({ event, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Quick chat"
               required
-              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-2.5 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+              className="mt-1.5 w-full rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
             />
           </label>
 
           <label className="block text-sm font-semibold text-[var(--text)]">
             URL
-            <div className="mt-2 flex items-center rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] overflow-hidden transition-all focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]">
-              <span className="pl-4 pr-1 py-2.5 text-sm text-[var(--muted)] whitespace-nowrap hidden sm:inline-block">
+            <div className="mt-1.5 flex items-center rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] overflow-hidden transition-all focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]">
+              <span className="pl-3 pr-1 py-2 text-sm text-[var(--muted)] whitespace-nowrap hidden sm:inline-block">
                 https://cal.com/anshika-singh-
               </span>
-              <span className="pl-4 pr-1 py-2.5 text-sm text-[var(--muted)] whitespace-nowrap sm:hidden">
+              <span className="pl-3 pr-1 py-2 text-sm text-[var(--muted)] whitespace-nowrap sm:hidden">
                 /
               </span>
               <input
@@ -116,90 +116,93 @@ function EventTypeModal({ event, onClose, onSave }) {
 
           <div className="block text-sm font-semibold text-[var(--text)]">
             Description
-            <div className="mt-2 w-full overflow-hidden rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] transition-all focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]">
-              {/* Pseudo rich text toolbar matching cal.com screenshot */}
+            <div className="mt-1.5 w-full overflow-hidden rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] transition-all focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]">
               <div className="flex items-center gap-1 border-b border-[var(--panel-border)] px-2 py-1">
-                <button type="button" className="p-2 text-[var(--muted)] hover:text-[var(--text)] transition-colors rounded">
+                <button type="button" className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors rounded">
                   <Bold size={14} />
                 </button>
-                <button type="button" className="p-2 text-[var(--muted)] hover:text-[var(--text)] transition-colors rounded">
+                <button type="button" className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors rounded">
                   <Italic size={14} />
                 </button>
               </div>
               <textarea
                 name="description"
-                rows="3"
+                rows="2"
                 value={form.description}
                 onChange={handleChange}
                 placeholder="A quick video meeting."
-                className="w-full resize-none bg-transparent px-4 py-3 text-sm text-[var(--text)] outline-none"
+                className="w-full resize-none bg-transparent px-3 py-2 text-sm text-[var(--text)] outline-none"
               />
             </div>
           </div>
 
-          <label className="block text-sm font-semibold text-[var(--text)]">
-            Duration
-            <div className="mt-2 relative">
-              <select
-                name="duration"
-                value={form.duration}
-                onChange={handleChange}
-                className="w-full appearance-none rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-2.5 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
-              >
-                {DURATIONS.map((duration) => (
-                  <option key={duration} value={duration}>
-                    {duration}
-                  </option>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block text-sm font-semibold text-[var(--text)]">
+              Duration
+              <div className="mt-1.5 relative">
+                <select
+                  name="duration"
+                  value={form.duration}
+                  onChange={handleChange}
+                  className="w-full appearance-none rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                >
+                  {DURATIONS.map((duration) => (
+                    <option key={duration} value={duration}>
+                      {duration}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                  <span className="text-sm text-[var(--muted)]">m</span>
+                </div>
+              </div>
+            </label>
+
+            <label className="block text-sm font-semibold text-[var(--text)]">
+              Buffer Time
+              <div className="mt-1.5 relative">
+                <select
+                  name="bufferTime"
+                  value={form.bufferTime}
+                  onChange={handleChange}
+                  className="w-full appearance-none rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                >
+                  {[0, 5, 10, 15, 30, 45, 60].map((t) => (
+                    <option key={t} value={t}>{t} m</option>
+                  ))}
+                </select>
+              </div>
+            </label>
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--primary)] hover:opacity-80 transition select-none outline-none">
+              + Advanced (Custom Questions)
+            </summary>
+            <div className="mt-3 block text-sm font-semibold text-[var(--text)] pt-2 border-t border-[var(--panel-border)]">
+              Custom Questions
+              <div className="mt-2 space-y-2">
+                {form.customQuestions.map((q, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      value={q}
+                      onChange={(e) => handleQuestionsChange(idx, e.target.value)}
+                      placeholder="e.g. Phone Number, Company Size"
+                      className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--input-bg)] px-3 py-1.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <button type="button" onClick={() => removeQuestion(idx)} className="text-red-500 hover:bg-red-500/10 p-1.5 rounded transition">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
-                <span className="text-sm text-[var(--muted)]">minutes</span>
+                <button type="button" onClick={addQuestion} className="text-sm text-[var(--muted)] hover:text-[var(--text)] flex items-center gap-1 mt-2 transition">
+                  <Plus size={14} /> Add question
+                </button>
               </div>
             </div>
-          </label>
-
-          <label className="block text-sm font-semibold text-[var(--text)]">
-            Buffer Time
-            <div className="mt-2 relative">
-              <select
-                name="bufferTime"
-                value={form.bufferTime}
-                onChange={handleChange}
-                className="w-full appearance-none rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-2.5 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
-              >
-                {[0, 5, 10, 15, 30, 45, 60].map((t) => (
-                  <option key={t} value={t}>{t} minutes</option>
-                ))}
-              </select>
-            </div>
-          </label>
-
-          <div className="block text-sm font-semibold text-[var(--text)]">
-            Custom Questions
-            <div className="mt-2 space-y-2">
-              {form.customQuestions.map((q, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    value={q}
-                    onChange={(e) => handleQuestionsChange(idx, e.target.value)}
-                    placeholder="e.g. Phone Number, Company Size"
-                    className="w-full rounded-xl border border-[var(--panel-border)] bg-[var(--input-bg)] px-4 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
-                  />
-                  <button type="button" onClick={() => removeQuestion(idx)} className="text-red-500 hover:bg-red-500/10 p-2 rounded transition">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              <button type="button" onClick={addQuestion} className="text-sm text-[var(--muted)] hover:text-[var(--text)] flex items-center gap-1 mt-2 transition">
-                <Plus size={14} /> Add question
-              </button>
-            </div>
-          </div>
+          </details>
           
-          {/* Subtle separator */}
-          <div className="h-px w-full bg-[var(--panel-border)] !mt-8" />
-
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--panel-border)] mt-4">
             <button
               type="button"
               onClick={onClose}
