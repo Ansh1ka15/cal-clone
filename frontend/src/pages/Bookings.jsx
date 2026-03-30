@@ -344,13 +344,13 @@ export default function Bookings() {
                     <>
                       <button
                         onClick={() => setRescheduleItem(booking)}
-                        className="rounded-2xl border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        className="flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                       >
                         <RefreshCw size={14} /> Reschedule
                       </button>
                       <button
                         onClick={() => handleCancel(booking.id)}
-                        className="rounded-2xl border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                        className="flex items-center gap-2 rounded-2xl border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition"
                       >
                         <X size={14} /> Cancel
                       </button>

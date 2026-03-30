@@ -180,6 +180,7 @@ export default function Availability() {
 
   const [copyingDayIndex, setCopyingDayIndex] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const fetchSchedules = async () => {
     try {
@@ -435,10 +436,25 @@ export default function Availability() {
             >
               <ArrowLeft size={20} />
             </button>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">{editingSchedule.name}</h1>
-              <Edit2 size={16} className="text-[var(--muted)]" />
-            </div>
+            {isRenaming ? (
+              <input
+                autoFocus
+                value={editingSchedule.name}
+                onChange={(e) => setEditingSchedule({...editingSchedule, name: e.target.value})}
+                onBlur={() => setIsRenaming(false)}
+                onKeyDown={(e) => e.key === 'Enter' && setIsRenaming(false)}
+                className="text-xl font-bold bg-transparent outline-none border-b-2 border-[var(--primary)] text-[var(--text)] px-1 w-[200px]"
+              />
+            ) : (
+              <div 
+                onClick={() => setIsRenaming(true)} 
+                className="flex items-center gap-2 cursor-pointer group rounded-md hover:bg-[var(--hover)] px-2 py-1 -ml-2 transition"
+                title="Rename Schedule"
+              >
+                <h1 className="text-xl font-bold text-[var(--text)] group-hover:text-[var(--primary)] transition">{editingSchedule.name}</h1>
+                <Edit2 size={16} className="text-[var(--muted)] group-hover:text-[var(--primary)] transition opacity-50 group-hover:opacity-100" />
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-4">
