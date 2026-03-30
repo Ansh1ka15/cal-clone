@@ -28,6 +28,7 @@ Users can create event types, set availability, and allow others to book meeting
 * 📊 View upcoming bookings
 * 🔄 Cancel & reschedule bookings
 * 🎨 Color-coded event types
+* 🌗 Light & Dark theme support
 
 ---
 
@@ -35,23 +36,62 @@ Users can create event types, set availability, and allow others to book meeting
 
 ### 📌 Event Types Dashboard
 
-![Event Types](./screenshots/event-types.png)
+#### 🌞 Light Mode
+
+![Event Types Light](./screenshots/event-types-light.png)
+
+#### 🌙 Dark Mode
+
+![Event Types Dark](./screenshots/event-types-dark.png)
+
+---
 
 ### ➕ Create Event Type
 
-![New Event](./screenshots/new-event.png)
+#### 🌞 Light Mode
 
-### ⏰ Availability
+![New Event](./screenshots/create-event-light.png)
 
-![Availability](./screenshots/availability.png)
+#### 🌙 Dark Mode
+
+![New Event Dark](./screenshots/create-event-dark.png)
+
+---
 
 ### 📊 Bookings
 
-![Bookings](./screenshots/bookings.png)
+#### 🌞 Light Mode
+
+![Bookings](./screenshots/bookings-light.png)
+
+#### 🌙 Dark Mode
+
+![Bookings Dark](./screenshots/bookings-dark.png)
+
+---
+
+### ⏰ Availability
+
+#### 🌞 Light Mode
+
+![Availability](./screenshots/availability-light.png)
+
+#### 🌙 Dark Mode
+
+![Availability Dark](./screenshots/availability-dark.png)
+
+#### 🕒 Slots View
+
+![Slots](./screenshots/availability-slots.png)
+
+
+---
 
 ### ✅ Booking Confirmation
 
 ![Booking Confirm](./screenshots/booking-confirm.png)
+
+---
 
 ### 🔌 API Testing
 
@@ -163,5 +203,3 @@ npm run dev
 ## 👩‍💻 Author
 
 **Anshika Singh**
-
-
